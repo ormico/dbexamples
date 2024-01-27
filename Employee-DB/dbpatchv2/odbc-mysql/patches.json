@@ -1,0 +1,22 @@
+{
+  "DatabaseType": "odbc",
+  "CodeFolder": "Code",
+  "CodeFiles": [
+    "*.view.sql",
+    "*.udf.sql",
+    "*.view2.sql",
+    "*.udf2.sql",
+    "*.view3.sql",
+    "*.udf3.sql",
+    "*.sproc.sql",
+    "*.sproc2.sql",
+    "*.sproc3.sql",
+    "*.trigger.sql",
+    "*.trigger2.sql",
+    "*.trigger3.sql"
+  ],
+  "PatchFolder": "Patches",
+  "Options": null,
+  "patches": [
+  ]
+}
