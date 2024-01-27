@@ -16,5 +16,9 @@
   ],
   "PatchFolder": "Patches",
   "patches": [
+    {
+      "id": "202401270230-6495-create-employees-and-departments",
+      "dependsOn": []
+    }
   ]
 }
