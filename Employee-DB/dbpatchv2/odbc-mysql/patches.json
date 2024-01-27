@@ -19,6 +19,12 @@
     {
       "id": "202401270230-6495-create-employees-and-departments",
       "dependsOn": []
+    },
+    {
+      "id": "202401270339-3978-employee-roles",
+      "dependsOn": [
+        "202401270230-6495-create-employees-and-departments"
+      ]
     }
   ]
 }
