@@ -45,6 +45,12 @@
         "202401270405-4864-employee-salaries",
         "202401270414-3812-employee-leaves"
       ]
+    },
+    {
+      "id": "202401270437-4450-projects",
+      "dependsOn": [
+        "202401270430-5606-performance-reviews"
+      ]
     }
   ]
 }
