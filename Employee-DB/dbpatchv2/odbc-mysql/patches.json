@@ -25,6 +25,12 @@
       "dependsOn": [
         "202401270230-6495-create-employees-and-departments"
       ]
+    },
+    {
+      "id": "202401270405-4864-employee-salaries",
+      "dependsOn": [
+        "202401270230-6495-create-employees-and-departments"
+      ]
     }
   ]
 }
