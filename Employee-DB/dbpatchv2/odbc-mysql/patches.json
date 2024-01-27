@@ -19,6 +19,12 @@
     {
       "id": "202401270230-6495-create-employees-and-departments",
       "dependsOn": []
+    },
+    {
+      "id": "202401270414-3812-employee-leaves",
+      "dependsOn": [
+        "202401270230-6495-create-employees-and-departments"
+      ]
     }
   ]
 }
