@@ -1,5 +1,4 @@
 {
-  "DatabaseType": "odbc",
   "CodeFolder": "Code",
   "CodeFiles": [
     "*.view.sql",
@@ -16,7 +15,6 @@
     "*.trigger3.sql"
   ],
   "PatchFolder": "Patches",
-  "Options": null,
   "patches": [
   ]
 }
