@@ -1,0 +1,5 @@
+CREATE TABLE Role (
+    RoleId INT AUTO_INCREMENT PRIMARY KEY,
+    Title VARCHAR(100) NOT NULL,
+    Description VARCHAR(255)
+);
