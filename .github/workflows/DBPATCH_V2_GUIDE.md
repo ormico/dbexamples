@@ -149,32 +149,130 @@ Within each patch folder, `.sql` files execute **alphabetically** by filename:
 - Avoid special characters that might affect alphabetical sorting
 
 ### 3. Code Folder Execution (After All Patches)
-After all patches complete, files in the `Code/` folder execute by matching glob patterns in `CodeFiles` array order:
+
+**Purpose:** The `Code/` folder contains database programmability objects (stored procedures, views, functions, triggers) that are re-applied on every `dbpatch build` command. Unlike patches (which run once), code files are idempotent - they drop and recreate objects.
+
+**Execution Order:** Files in the `Code/` folder execute by matching glob patterns in the `CodeFiles` array order from patches.json:
 
 **Default order from patches.json:**
-1. `*.view.sql` - Views
-2. `*.udf.sql` - User Defined Functions
-3. `*.view2.sql` - Views (second pass for dependencies)
-4. `*.udf2.sql` - Functions (second pass)
-5. `*.view3.sql` - Views (third pass)
-6. `*.udf3.sql` - Functions (third pass)
-7. `*.sproc.sql` - Stored Procedures
-8. `*.sproc2.sql` - Stored Procedures (second pass)
-9. `*.sproc3.sql` - Stored Procedures (third pass)
-10. `*.trigger.sql` - Triggers
-11. `*.trigger2.sql` - Triggers (second pass)
-12. `*.trigger3.sql` - Triggers (third pass)
+```json
+"CodeFiles": [
+  "*.view.sql",      // 1. Views (first pass)
+  "*.udf.sql",       // 2. User Defined Functions (first pass)
+  "*.view2.sql",     // 3. Views (second pass for dependencies)
+  "*.udf2.sql",      // 4. Functions (second pass)
+  "*.view3.sql",     // 5. Views (third pass)
+  "*.udf3.sql",      // 6. Functions (third pass)
+  "*.sproc.sql",     // 7. Stored Procedures (first pass)
+  "*.sproc2.sql",    // 8. Stored Procedures (second pass)
+  "*.sproc3.sql",    // 9. Stored Procedures (third pass)
+  "*.trigger.sql",   // 10. Triggers (first pass)
+  "*.trigger2.sql",  // 11. Triggers (second pass)
+  "*.trigger3.sql"   // 12. Triggers (third pass)
+]
+```
 
-**Example:**
+### Code Folder Naming Conventions
+
+**Format:** `<ObjectName>.<suffix>.sql`
+
+**Suffix determines execution order:**
+- `.view.sql` - Views (executed first)
+- `.udf.sql` - User-defined functions
+- `.sproc.sql` - Stored procedures
+- `.trigger.sql` - Triggers (executed last)
+
+**For dependencies, use numbered suffixes:**
+- `.view2.sql`, `.view3.sql` - Views that depend on other views
+- `.udf2.sql`, `.udf3.sql` - Functions that depend on other functions
+- `.sproc2.sql`, `.sproc3.sql` - Stored procedures that call other stored procedures
+- `.trigger2.sql`, `.trigger3.sql` - Triggers with dependencies
+
+**Example Code folder structure:**
 ```
 Code/
-├── EmployeeSummary.view.sql       -- Runs in *.view.sql pass
-├── GetEmployeeName.udf.sql        -- Runs in *.udf.sql pass
-├── CreateEmployee.sproc.sql       -- Runs in *.sproc.sql pass
-└── AuditChanges.trigger.sql       -- Runs in *.trigger.sql pass
+├── EmployeeSummary.view.sql           -- Base view, runs in pass 1
+├── DepartmentSummary.view.sql         -- Base view, runs in pass 1
+├── EmployeeWithDept.view2.sql         -- Depends on EmployeeSummary, runs in pass 3
+├── GetEmployeeName.udf.sql            -- Base function, runs in pass 2
+├── GetFullEmployeeData.udf2.sql       -- Depends on GetEmployeeName, runs in pass 4
+├── CreateEmployee.sproc.sql           -- Base procedure, runs in pass 7
+├── UpdateEmployee.sproc.sql           -- Base procedure, runs in pass 7
+├── MigrateEmployee.sproc2.sql         -- Calls CreateEmployee, runs in pass 8
+├── AuditEmployeeChanges.trigger.sql   -- Base trigger, runs in pass 10
+└── ValidateEmployee.trigger2.sql      -- Depends on GetEmployeeName UDF, runs in pass 11
 ```
 
-**Note:** The multiple passes (2, 3) handle dependencies between code objects of the same type.
+**Why Multiple Passes?**
+Objects of the same type may depend on each other:
+- A view might query another view
+- A function might call another function
+- A stored procedure might call other procedures
+
+The numbered suffixes ensure dependencies are created in the correct order.
+
+**Best Practices:**
+- **Simple objects:** Use `.view.sql`, `.udf.sql`, `.sproc.sql`, `.trigger.sql`
+- **Objects with dependencies:** Use `.view2.sql`, `.sproc2.sql`, etc.
+- **Complex dependency chains:** Use `.view3.sql`, `.sproc3.sql` (rarely needed)
+- **Idempotent scripts:** Always use `DROP ... IF EXISTS` or `CREATE OR REPLACE` patterns
+- **Consistent naming:** Choose a naming convention for object names (e.g., `CreateEmployee` vs `create_employee`)
+
+## Patches vs Code Folders: When to Use Each
+
+### Patches Folder
+**Use for:** One-time schema changes that modify database structure
+
+**Examples:**
+- `CREATE TABLE` statements
+- `ALTER TABLE` to add/modify columns
+- `CREATE INDEX` statements
+- Data migrations
+- One-time data fixes
+
+**Characteristics:**
+- Run once and tracked in `InstalledPatches` table
+- Skipped on subsequent `dbpatch build` runs
+- Organized by timestamp-based patch IDs
+- SQL files execute alphabetically within each patch
+- Used for incremental database evolution
+
+### Code Folder
+**Use for:** Reusable database code that needs to be recreated on each build
+
+**Examples:**
+- Stored procedures
+- Functions (UDFs)
+- Views
+- Triggers
+
+**Characteristics:**
+- Run on every `dbpatch build` (idempotent)
+- Not tracked - always executed
+- Organized by file suffix (`.view.sql`, `.sproc.sql`, etc.)
+- Multiple passes handle dependencies
+- Scripts should use `DROP IF EXISTS` or `CREATE OR REPLACE` patterns
+
+**Example Workflow:**
+```bash
+# 1. Add new table (one-time schema change)
+dbpatch addpatch -n add-employee-table
+# Create: Patches/202401270230-6495-add-employee-table/1_employee.sql
+
+# 2. Add stored procedure to work with the table (reusable code)
+# Manually create: Code/CreateEmployee.sproc.sql
+
+# 3. Apply both
+dbpatch build
+# - Patch runs once, logged to InstalledPatches
+# - Stored procedure recreated on every build
+```
+
+**Decision Tree:**
+- Modifying database structure? → **Patches folder**
+- Creating/updating business logic? → **Code folder**
+- One-time data migration? → **Patches folder**
+- Reusable query or procedure? → **Code folder**
 
 ## Critical Pattern: Circular References
 
@@ -234,6 +332,12 @@ ADD CONSTRAINT FK_Employee_DepartmentId
 
 ## Creating a New Patch from SCHEMA_DESIGN.md
 
+### Workflow Overview
+
+1. **Run `dbpatch addpatch` command** - Creates patch folder and updates patches.json
+2. **Add SQL files to the patch folder** - User manually creates schema change scripts
+3. **Run `dbpatch build`** - Applies patches and code files to database
+
 ### Using dbpatch addpatch Command
 
 The recommended way to create patches is using the `dbpatch addpatch` command:
@@ -244,11 +348,30 @@ dbpatch addpatch -n add-employee-roles
 
 This automatically:
 - Generates timestamp-based patch ID (e.g., `202401290915-3421-add-employee-roles`)
-- Creates patch folder in `Patches/`
-- Updates `patches.json` with new patch
+- Creates empty patch folder in `Patches/` directory
+- Updates `patches.json` with new patch entry
 - Sets `dependsOn` to all current "open" patches (patches with no other dependencies)
 
-Then add your SQL files to the created folder.
+### Adding SQL Files to the Patch Folder
+
+**After running `addpatch`, you must manually create SQL files in the new patch folder:**
+
+```bash
+# Command creates folder:
+Patches/202401290915-3421-add-employee-roles/
+
+# You then add SQL files:
+Patches/202401290915-3421-add-employee-roles/
+├── 1_employeerole.sql       # CREATE TABLE statements
+├── 2_constraints.sql        # ALTER TABLE for FKs
+└── 3_indexes.sql            # CREATE INDEX statements
+```
+
+**Key Points:**
+- SQL files execute **alphabetically** - use numeric prefixes to control order
+- Use descriptive names after the prefix: `1_employeerole.sql`, not `1_table.sql`
+- Handle circular references by creating tables first, foreign keys second
+- Files must have `.sql` extension to be executed
 
 ### Manual Patch Creation Process
 
