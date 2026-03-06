@@ -27,6 +27,10 @@ Both documents are shared across all implementations. Never modify them for plat
 
 ## Critical Rules
 
+### Git Workflow
+- **NEVER merge pull requests** — merging PRs is always a manual action by the developer
+- Never push to remote without explicit user instruction
+
 ### patches.json
 - **NEVER** edit `patches.json` manually — the dbpatch CLI owns this file
 - Use `dbpatch addpatch -n <name>` to create patches; it generates the ID and updates dependencies
