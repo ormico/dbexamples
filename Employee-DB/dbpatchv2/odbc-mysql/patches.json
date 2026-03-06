@@ -1,0 +1,56 @@
+{
+  "CodeFolder": "Code",
+  "CodeFiles": [
+    "*.view.sql",
+    "*.udf.sql",
+    "*.view2.sql",
+    "*.udf2.sql",
+    "*.view3.sql",
+    "*.udf3.sql",
+    "*.sproc.sql",
+    "*.sproc2.sql",
+    "*.sproc3.sql",
+    "*.trigger.sql",
+    "*.trigger2.sql",
+    "*.trigger3.sql"
+  ],
+  "PatchFolder": "Patches",
+  "patches": [
+    {
+      "id": "202401270230-6495-create-employees-and-departments",
+      "dependsOn": []
+    },
+    {
+      "id": "202401270339-3978-employee-roles",
+      "dependsOn": [
+        "202401270230-6495-create-employees-and-departments"
+      ]
+    },
+    {
+      "id": "202401270405-4864-employee-salaries",
+      "dependsOn": [
+        "202401270230-6495-create-employees-and-departments"
+      ]
+    },
+    {
+      "id": "202401270414-3812-employee-leaves",
+      "dependsOn": [
+        "202401270230-6495-create-employees-and-departments"
+      ]
+    },
+    {
+      "id": "202401270430-5606-performance-reviews",
+      "dependsOn": [
+        "202401270339-3978-employee-roles",
+        "202401270405-4864-employee-salaries",
+        "202401270414-3812-employee-leaves"
+      ]
+    },
+    {
+      "id": "202401270437-4450-projects",
+      "dependsOn": [
+        "202401270430-5606-performance-reviews"
+      ]
+    }
+  ]
+}

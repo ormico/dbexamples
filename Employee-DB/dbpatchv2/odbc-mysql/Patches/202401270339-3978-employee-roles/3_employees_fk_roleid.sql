@@ -1,0 +1,1 @@
+ALTER TABLE Employee ADD FOREIGN KEY (RoleId) REFERENCES Role(RoleId);
