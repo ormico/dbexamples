@@ -4,7 +4,7 @@
 **Purpose:** Platform-agnostic database design specification
 
 > **📖 Companion Document:** This document provides technical specifications and implementation details.  
-> For collaborative development context, team stories, and lessons learned, see [DEVELOPMENT_SCENARIO.md](DEVELOPMENT_SCENARIO.md).
+> For collaborative development context, team stories, and lessons learned, see [SCENARIO.md](SCENARIO.md).
 
 ## Overview
 

@@ -47,7 +47,7 @@ A comprehensive employee management system demonstrating layered schema evolutio
 - Circular reference between Employee and Department demonstrates constraint ordering
 - Phased migrations show safe production deployment patterns
 
-See [SCHEMA_DESIGN.md](Employee-DB/dbpatchv2/odbc-mysql/SCHEMA_DESIGN.md) for technical specifications and [DEVELOPMENT_SCENARIO.md](Employee-DB/dbpatchv2/odbc-mysql/DEVELOPMENT_SCENARIO.md) for the collaborative development story.
+See [SCHEMA_DESIGN.md](Employee-DB/SCHEMA_DESIGN.md) for technical specifications and [SCENARIO.md](Employee-DB/SCENARIO.md) for the collaborative development story.
 
 ![Employee Database ERD](Employee-DB/dbpatchv2/odbc-mysql/docs/employee-db-mysql.png)
 

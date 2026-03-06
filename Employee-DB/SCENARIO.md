@@ -2,7 +2,7 @@
 
 **Project:** Employee Management System Database  
 **Timeline:** January 2024  
-**Team:** See [DEVELOPERS.md](../../../DEVELOPERS.md) for team member details
+**Team:** See [DEVELOPERS.md](../DEVELOPERS.md) for team member details
 
 > **📋 Companion Document:** This document describes HOW the database was built collaboratively and WHY decisions were made.  
 > For technical specifications and platform-agnostic implementation details, see [SCHEMA_DESIGN.md](SCHEMA_DESIGN.md).
