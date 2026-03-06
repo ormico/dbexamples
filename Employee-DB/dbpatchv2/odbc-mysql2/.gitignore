@@ -1,0 +1,11 @@
+# DBPatch runtime files
+*.log
+
+# Backup files
+*.bak
+
+# Test data outputs
+test-data/*.generated.*
+
+# Environment-specific configs
+.env.local

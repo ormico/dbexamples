@@ -1,67 +1,97 @@
-# Ormico Database Examples
+# Database Examples
 
-Example databases demonstrating patch-based schema migration patterns across multiple database platforms. These examples are designed to test and validate database migration tools (dbpatch v2 and v3) by providing realistic, progressively complex database schemas with comprehensive documentation.
+This repository contains realistic example databases you can spin up locally, study, and use as reference for your own schema design and migration work. Each example is a fully documented scenario — a fictional company with a real team narrative, incremental design decisions, and platform-specific SQL implementations you can build and run.
 
-## Purpose
+Every scenario is defined by two canonical documents: a **schema spec** (`SCHEMA_DESIGN.md`) describing the tables, relationships, and layer dependencies in platform-agnostic terms, and a **scenario narrative** (`SCENARIO.md`) telling the story of how the team built it — who made what decisions and why. From those two documents, implementations are generated for different databases and migration tools.
 
-This repository serves as:
-- **Reference implementations** of database design patterns
-- **Test cases** for cross-platform database migration tools
-- **Reproduction specifications** enabling database recreation across MySQL, SQL Server, PostgreSQL, and other platforms
-- **Development scenarios** showing collaborative, incremental database evolution
+The examples are designed to be useful whether you want to study database design patterns, test a migration tool, learn how schema changes compound over time, or see what a well-documented database project looks like.
 
-## Repository Structure
+---
 
-Each example database includes:
-- **Platform-agnostic specifications** - Logical schema designs that can be implemented on any database
-- **Platform-specific implementations** - Actual database code for MySQL, SQL Server, PostgreSQL, etc.
-- **Development scenarios** - Collaborative stories showing how the database evolved through team decisions
-- **Multiple versions** - Implementations using both dbpatch v2 and v3 migration frameworks
-
-## Current Examples
+## Scenarios
 
 ### Employee Database
 
-A comprehensive employee management system demonstrating layered schema evolution through 8 patch layers.
+An employee management system for a fictional company. Tracks organizational structure, compensation, performance reviews, and project assignments. Built in 8 layers that progressively add complexity, including an intentional design flaw in Layer 1 corrected in Layer 4 — a realistic pattern for production database evolution.
 
-**Current implementations:**
-- [MySQL - DB Patch v2 with ODBC](Employee-DB/dbpatchv2/odbc-mysql/README.md) (Layers 0-3 implemented)
-
-**Planned implementations:**
-- MySQL - DB Patch v3
-- SQL Server - DB Patch v2 and v3
-- PostgreSQL - DB Patch v2 and v3
-
-**Features across layers:**
-- Layer 0: Foundation (Employee, Department)
-- Layer 1: Employee details (Roles, Salary, Leave tracking)
-- Layer 2: Performance reviews
-- Layer 3: Project management
-- Layer 4: Technical debt cleanup (reference tables)
-- Layer 5: Soft delete pattern
-- Layer 6: Teams and management hierarchy
-- Layer 7: Skills tracking
-
-**Known design decisions:**
-- LeaveBalance column location (Layer 1c) is intentional technical debt, addressed in Layer 4
-- Circular reference between Employee and Department demonstrates constraint ordering
-- Phased migrations show safe production deployment patterns
-
-See [SCHEMA_DESIGN.md](Employee-DB/SCHEMA_DESIGN.md) for technical specifications and [SCENARIO.md](Employee-DB/SCENARIO.md) for the collaborative development story.
+**Schema:** [Employee-DB/SCHEMA_DESIGN.md](Employee-DB/SCHEMA_DESIGN.md)
+**Narrative:** [Employee-DB/SCENARIO.md](Employee-DB/SCENARIO.md)
 
 ![Employee Database ERD](Employee-DB/dbpatchv2/odbc-mysql/docs/employee-db-mysql.png)
 
-## Future Examples
+#### Layers
 
-Additional database examples are planned to demonstrate different design patterns and migration scenarios:
-- E-commerce database (product catalog, orders, inventory)
-- Healthcare records (patients, appointments, medical history)
-- Educational system (students, courses, enrollments, grades)
+| Layer | Name | Tables Added | Depends On |
+|-------|------|--------------|------------|
+| 0 | Foundation | Employee, Department | — |
+| 1a | Employee Roles | Role | Layer 0 |
+| 1b | Salary Tracking | Salary | Layer 0 |
+| 1c | Leave Management | EmployeeLeave | Layer 0 |
+| 2 | Performance Reviews | PerformanceReview | Layers 1a, 1b, 1c |
+| 3 | Project Management | Project, EmployeeProjectAssignment | Layer 2 |
+| 4 | Technical Debt Cleanup | (refactors Layer 1c) | Layer 2 |
+| 5 | Soft Delete | (modifies all tables) | Layers 0–4 |
+| 6 | Teams & Management Hierarchy | Team, TeamMembership | Layers 0, 1a |
+| 7 | Skills Tracking | Skill, EmployeeSkill | Layers 1a, 3 |
 
-## Usage
+#### Implementations
 
-These examples can be used to:
-1. **Learn database design patterns** - Study the documented design decisions and evolution
-2. **Test migration tools** - Reproduce databases across platforms using dbpatch v2 and v3
-3. **Validate cross-platform compatibility** - Compare implementations across MySQL, SQL Server, PostgreSQL
-4. **Practice incremental deployment** - Follow the layered patch approach for safe schema evolution
+| Tool | Platform | Layers Complete | Notes |
+|------|----------|-----------------|-------|
+| DBPatch v2 + ODBC | MySQL 8 | 0–3 | Reference implementation. Includes CRUD stored procedures. |
+| DBPatch v2 + ODBC | MySQL 8 | 0–3 | AI-driven POC (`odbc-mysql2`). In progress. |
+
+---
+
+### ECommerce Database
+
+Planned. Domain: product catalog, inventory, orders, customers, payments, shipping, and returns. Will target 12–15 layers and 20+ tables.
+
+---
+
+## How to Run an Implementation
+
+Each implementation folder contains a `docker-compose.yml` that starts the target database.
+
+```bash
+cd Employee-DB/dbpatchv2/odbc-mysql2
+docker compose up -d
+```
+
+Once the database is running, use the [DBPatch v2](https://github.com/ormico/dbpatch) CLI to apply all patches:
+
+```
+dbpatch build
+```
+
+This applies patches in dependency order and records each one in the database's patch tracking table. To validate, connect to the database and run queries against the created tables.
+
+See [docs/IMPLEMENTATION_GUIDE.md](docs/IMPLEMENTATION_GUIDE.md) for full setup details, including connection config, ScriptOverrides, and how to load test data.
+
+---
+
+## Repository Structure
+
+```
+/
+├── docs/                          # Contributor and implementation guides
+│   ├── DEV_GUIDE.md
+│   ├── SCHEMA_AND_SCENARIO_GUIDE.md
+│   └── IMPLEMENTATION_GUIDE.md
+├── DEVELOPERS.md                  # Fictional developer cast used across scenarios
+├── Employee-DB/
+│   ├── SCHEMA_DESIGN.md           # Platform-agnostic schema spec (all 8 layers)
+│   ├── SCENARIO.md                # Team narrative (decisions, timestamps, context)
+│   └── dbpatchv2/
+│       ├── odbc-mysql/            # Reference implementation (Layers 0–3 complete)
+│       └── odbc-mysql2/           # AI-driven POC (in progress)
+└── ECommerce-DB/                  # Planned
+```
+
+---
+
+## Contributing or Adding Examples
+
+See [docs/DEV_GUIDE.md](docs/DEV_GUIDE.md) to get started. It covers how to add a new implementation of an existing scenario, how to create a new scenario from scratch, and how the two-document pattern works.
+
+The fictional developers who appear in scenario narratives are defined in [DEVELOPERS.md](DEVELOPERS.md).

@@ -1,0 +1,59 @@
+{
+  "DatabaseType": "odbc",
+  "ConnectionString": "Driver={MySQL ODBC 9.5 Unicode Driver};Server=localhost;Port=3307;Database=employeedb2;Uid=dbpatch;Pwd=dbpatch123;",
+  "CodeFolder": "Code",
+  "CodeFiles": [
+    "*.view.sql",
+    "*.udf.sql",
+    "*.view2.sql",
+    "*.udf2.sql",
+    "*.view3.sql",
+    "*.udf3.sql",
+    "*.sproc.sql",
+    "*.sproc2.sql",
+    "*.sproc3.sql",
+    "*.trigger.sql",
+    "*.trigger2.sql",
+    "*.trigger3.sql"
+  ],
+  "PatchFolder": "Patches",
+  "Options": null,
+  "patches": [
+    {
+      "id": "202511232341-2444-create-employees-and-departments",
+      "dependsOn": []
+    },
+    {
+      "id": "202511232346-4674-employee-roles",
+      "dependsOn": [
+        "202511232341-2444-create-employees-and-departments"
+      ]
+    },
+    {
+      "id": "202511232346-4391-employee-salaries",
+      "dependsOn": [
+        "202511232341-2444-create-employees-and-departments"
+      ]
+    },
+    {
+      "id": "202511232346-4107-employee-leaves",
+      "dependsOn": [
+        "202511232341-2444-create-employees-and-departments"
+      ]
+    },
+    {
+      "id": "202511242124-2674-performance-reviews",
+      "dependsOn": [
+        "202511232346-4674-employee-roles",
+        "202511232346-4391-employee-salaries",
+        "202511232346-4107-employee-leaves"
+      ]
+    },
+    {
+      "id": "202511242124-7746-projects",
+      "dependsOn": [
+        "202511242124-2674-performance-reviews"
+      ]
+    }
+  ]
+}
