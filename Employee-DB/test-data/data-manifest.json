@@ -1,0 +1,123 @@
+{
+  "loadOrder": [
+    "roles",
+    "departments",
+    "employees",
+    "salaries",
+    "employee_leaves",
+    "performance_reviews",
+    "projects",
+    "employee_project_assignments"
+  ],
+  "deferredUpdates": [
+    {
+      "description": "Set DepartmentHeadId after employees are loaded. Department and Employee have a circular FK (Employee.DepartmentId <-> Department.DepartmentHeadId). Departments are loaded first with DepartmentHeadId=NULL, then updated here.",
+      "sql": [
+        "UPDATE Department SET DepartmentHeadId = 1 WHERE DepartmentId = 1",
+        "UPDATE Department SET DepartmentHeadId = 7 WHERE DepartmentId = 2",
+        "UPDATE Department SET DepartmentHeadId = 8 WHERE DepartmentId = 3",
+        "UPDATE Department SET DepartmentHeadId = 4 WHERE DepartmentId = 4"
+      ]
+    }
+  ],
+  "tables": {
+    "roles": {
+      "file": "roles.csv",
+      "table": "Role",
+      "columns": {
+        "RoleId": "integer",
+        "Title": "text",
+        "Description": "text|nullable"
+      }
+    },
+    "departments": {
+      "file": "departments.csv",
+      "table": "Department",
+      "columns": {
+        "DepartmentId": "integer",
+        "Name": "text",
+        "Description": "text|nullable",
+        "DepartmentHeadId": "integer|nullable"
+      },
+      "notes": "DepartmentHeadId is loaded as NULL (circular FK with Employee). Set via deferredUpdates after employees are loaded."
+    },
+    "employees": {
+      "file": "employees.csv",
+      "table": "Employee",
+      "columns": {
+        "EmployeeId": "integer",
+        "FirstName": "text",
+        "LastName": "text",
+        "Email": "text|nullable",
+        "HireDate": "date",
+        "Status": "text|nullable",
+        "StreetAddress": "text|nullable",
+        "City": "text|nullable",
+        "State": "text|nullable",
+        "ZipCode": "text|nullable",
+        "Country": "text|nullable",
+        "DepartmentId": "integer|nullable",
+        "RoleId": "integer|nullable"
+      },
+      "notes": "RoleId was added in Layer 1a. Load after roles and departments are present."
+    },
+    "salaries": {
+      "file": "salaries.csv",
+      "table": "Salary",
+      "columns": {
+        "SalaryId": "integer",
+        "EmployeeId": "integer",
+        "Amount": "decimal",
+        "EffectiveDate": "date",
+        "NextReviewDate": "date|nullable"
+      }
+    },
+    "employee_leaves": {
+      "file": "employee_leaves.csv",
+      "table": "EmployeeLeave",
+      "columns": {
+        "LeaveId": "integer",
+        "EmployeeId": "integer",
+        "StartDate": "date",
+        "EndDate": "date",
+        "LeaveType": "text",
+        "LeaveBalance": "integer|nullable"
+      }
+    },
+    "performance_reviews": {
+      "file": "performance_reviews.csv",
+      "table": "PerformanceReview",
+      "columns": {
+        "ReviewId": "integer",
+        "EmployeeId": "integer",
+        "ReviewDate": "date",
+        "PerformanceRating": "integer",
+        "Comments": "text|nullable",
+        "PerformanceGoals": "text|nullable"
+      }
+    },
+    "projects": {
+      "file": "projects.csv",
+      "table": "Project",
+      "columns": {
+        "ProjectId": "integer",
+        "Name": "text",
+        "Description": "text|nullable",
+        "StartDate": "date|nullable",
+        "EndDate": "date|nullable",
+        "Budget": "decimal|nullable"
+      }
+    },
+    "employee_project_assignments": {
+      "file": "employee_project_assignments.csv",
+      "table": "EmployeeProjectAssignment",
+      "columns": {
+        "AssignmentId": "integer",
+        "EmployeeId": "integer",
+        "ProjectId": "integer",
+        "AssignedDate": "date",
+        "Role": "text|nullable"
+      }
+    }
+  }
+}
