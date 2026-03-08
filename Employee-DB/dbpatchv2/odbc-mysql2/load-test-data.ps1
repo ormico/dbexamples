@@ -22,3 +22,5 @@ Write-Host ""
 Write-Host "Reference implementation: Employee-DB/dbpatchv2/odbc-mysql/load-test-data.ps1"
 Write-Host "Test data:                Employee-DB/test-data/"
 Write-Host "Manifest:                 Employee-DB/test-data/data-manifest.json"
+
+exit 1

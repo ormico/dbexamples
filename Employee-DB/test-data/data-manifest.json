@@ -57,7 +57,7 @@
         "ZipCode": "text|nullable",
         "Country": "text|nullable",
         "DepartmentId": "integer|nullable",
-        "RoleId": "integer|nullable"
+        "RoleId": "integer"
       },
       "notes": "RoleId was added in Layer 1a. Load after roles and departments are present."
     },

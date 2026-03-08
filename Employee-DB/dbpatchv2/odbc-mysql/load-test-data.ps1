@@ -29,8 +29,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Resolve paths
-$scriptDir   = $PSScriptRoot
-$testDataDir = Join-Path $scriptDir "..\..\test-data"
+$scriptDir    = $PSScriptRoot
+$testDataDir  = Join-Path $scriptDir "..\..\test-data"
 $manifestPath = Join-Path $testDataDir "data-manifest.json"
 $localConfigPath = Join-Path $scriptDir "patches.local.json"
 
@@ -52,101 +52,117 @@ if (-not $connectionString) {
 # Load manifest
 $manifest = Get-Content $manifestPath | ConvertFrom-Json
 
-Write-Host "Employee DB — Load Test Data" -ForegroundColor Cyan
+Write-Host "Employee DB -- Load Test Data" -ForegroundColor Cyan
 Write-Host "Data directory: $testDataDir"
-Write-Host "Connection: $($connectionString -replace 'Pwd=[^;]+', 'Pwd=***')"
 Write-Host ""
 
 # Open ODBC connection
 $conn = New-Object System.Data.Odbc.OdbcConnection($connectionString)
 $conn.Open()
 
-function Invoke-Sql {
-    param([string]$Sql)
-    $cmd = New-Object System.Data.Odbc.OdbcCommand($Sql, $conn)
-    return $cmd.ExecuteNonQuery()
-}
+try {
 
-function Format-SqlValue {
-    param([string]$Value, [string]$TypeHint)
-    if ($Value -eq "" -or $Value -eq $null) {
-        return "NULL"
+    function Invoke-Sql {
+        param([string]$Sql)
+        $cmd = New-Object System.Data.Odbc.OdbcCommand($Sql, $conn)
+        try { return $cmd.ExecuteNonQuery() }
+        finally { $cmd.Dispose() }
     }
-    if ($TypeHint -match "integer|decimal") {
-        return $Value
+
+    # Optionally truncate tables (reverse load order to respect FKs)
+    if ($Truncate) {
+        Write-Host "Truncating tables..." -ForegroundColor Yellow
+        Invoke-Sql "SET FOREIGN_KEY_CHECKS = 0" | Out-Null
+
+        $reverseOrder = [System.Linq.Enumerable]::Reverse($manifest.loadOrder)
+        foreach ($tableKey in $reverseOrder) {
+            $tableDef = $manifest.tables.$tableKey
+            Invoke-Sql "TRUNCATE TABLE $($tableDef.table)" | Out-Null
+            Write-Host "  Truncated $($tableDef.table)"
+        }
+
+        Invoke-Sql "SET FOREIGN_KEY_CHECKS = 1" | Out-Null
+        Write-Host ""
     }
-    # Escape single quotes for text and date values
-    $escaped = $Value.Replace("'", "''")
-    return "'$escaped'"
-}
 
-# Optionally truncate tables (reverse load order to respect FKs)
-if ($Truncate) {
-    Write-Host "Truncating tables..." -ForegroundColor Yellow
-    Invoke-Sql "SET FOREIGN_KEY_CHECKS = 0" | Out-Null
-
-    $reverseOrder = [System.Linq.Enumerable]::Reverse($manifest.loadOrder)
-    foreach ($tableKey in $reverseOrder) {
+    # Load tables in manifest order
+    $totalRows = 0
+    foreach ($tableKey in $manifest.loadOrder) {
         $tableDef = $manifest.tables.$tableKey
-        Invoke-Sql "TRUNCATE TABLE $($tableDef.table)" | Out-Null
-        Write-Host "  Truncated $($tableDef.table)"
-    }
+        $csvPath  = Join-Path $testDataDir $tableDef.file
+        $tableName = $tableDef.table
 
-    Invoke-Sql "SET FOREIGN_KEY_CHECKS = 1" | Out-Null
-    Write-Host ""
-}
-
-# Load tables in manifest order
-$totalRows = 0
-foreach ($tableKey in $manifest.loadOrder) {
-    $tableDef = $manifest.tables.$tableKey
-    $csvPath = Join-Path $testDataDir $tableDef.file
-    $tableName = $tableDef.table
-
-    if (-not (Test-Path $csvPath)) {
-        Write-Warning "CSV not found, skipping: $csvPath"
-        continue
-    }
-
-    $rows = Import-Csv $csvPath
-    $columnNames = $tableDef.columns.PSObject.Properties.Name
-
-    # For departments: skip DepartmentHeadId (circular FK, handled by deferredUpdates)
-    if ($tableName -eq "Department") {
-        $columnNames = $columnNames | Where-Object { $_ -ne "DepartmentHeadId" }
-    }
-
-    $colList = $columnNames -join ", "
-    $count = 0
-
-    foreach ($row in $rows) {
-        $values = $columnNames | ForEach-Object {
-            $typeHint = $tableDef.columns.$_
-            Format-SqlValue -Value $row.$_ -TypeHint $typeHint
+        if (-not (Test-Path $csvPath)) {
+            Write-Warning "CSV not found, skipping: $csvPath"
+            continue
         }
-        $valList = $values -join ", "
-        Invoke-Sql "INSERT INTO $tableName ($colList) VALUES ($valList)" | Out-Null
-        $count++
+
+        $rows = Import-Csv $csvPath
+        $columnNames = $tableDef.columns.PSObject.Properties.Name
+
+        # For departments: skip DepartmentHeadId (circular FK, handled by deferredUpdates)
+        if ($tableName -eq "Department") {
+            $columnNames = $columnNames | Where-Object { $_ -ne "DepartmentHeadId" }
+        }
+
+        $colList     = $columnNames -join ", "
+        $placeholders = ($columnNames | ForEach-Object { "?" }) -join ", "
+        $insertSql   = "INSERT INTO $tableName ($colList) VALUES ($placeholders)"
+
+        $count = 0
+        $tx = $conn.BeginTransaction()
+        $cmd = $conn.CreateCommand()
+        try {
+            $cmd.CommandText = $insertSql
+            $cmd.Transaction = $tx
+
+            # Define one parameter per column (reused across rows)
+            foreach ($col in $columnNames) {
+                [void]$cmd.Parameters.Add($col, [System.Data.Odbc.OdbcType]::VarChar, 4000)
+            }
+
+            foreach ($row in $rows) {
+                for ($i = 0; $i -lt $columnNames.Count; $i++) {
+                    $val = $row.($columnNames[$i])
+                    $cmd.Parameters[$i].Value = if ($val -eq "" -or $null -eq $val) {
+                        [System.DBNull]::Value
+                    } else {
+                        $val
+                    }
+                }
+                [void]$cmd.ExecuteNonQuery()
+                $count++
+            }
+
+            $tx.Commit()
+        } catch {
+            $tx.Rollback()
+            throw
+        } finally {
+            $cmd.Dispose()
+        }
+
+        Write-Host "  [OK] $tableName -- $count rows" -ForegroundColor Green
+        $totalRows += $count
     }
 
-    Write-Host "  [OK] $tableName — $count rows" -ForegroundColor Green
-    $totalRows += $count
-}
-
-# Run deferred updates (e.g., set DepartmentHeadId after employees exist)
-if ($manifest.deferredUpdates -and $manifest.deferredUpdates.Count -gt 0) {
-    Write-Host ""
-    Write-Host "Running deferred updates..." -ForegroundColor Yellow
-    foreach ($update in $manifest.deferredUpdates) {
-        Write-Host "  $($update.description)"
-        foreach ($sql in $update.sql) {
-            $affected = Invoke-Sql $sql
-            Write-Host "    $sql — $affected row(s)" -ForegroundColor Gray
+    # Run deferred updates (e.g., set DepartmentHeadId after employees exist)
+    if ($manifest.deferredUpdates -and $manifest.deferredUpdates.Count -gt 0) {
+        Write-Host ""
+        Write-Host "Running deferred updates..." -ForegroundColor Yellow
+        foreach ($update in $manifest.deferredUpdates) {
+            Write-Host "  $($update.description)"
+            foreach ($sql in $update.sql) {
+                $affected = Invoke-Sql $sql
+                Write-Host "    $sql -- $affected row(s)" -ForegroundColor Gray
+            }
         }
     }
+
+    Write-Host ""
+    Write-Host "Done. $totalRows total rows loaded." -ForegroundColor Green
+
+} finally {
+    $conn.Close()
+    $conn.Dispose()
 }
-
-$conn.Close()
-
-Write-Host ""
-Write-Host "Done. $totalRows total rows loaded." -ForegroundColor Green
