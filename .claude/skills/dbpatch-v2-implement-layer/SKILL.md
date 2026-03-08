@@ -99,7 +99,10 @@ This creates the patch folder with the current timestamp and updates `patches.js
    ```
    Keep the random 4-digit suffix — only change the timestamp portion.
 
-2. **Update `patches.json`** — change the `id` field to match the renamed folder. Also verify `dependsOn` references are correct. This is the only time editing `patches.json` is permitted — only to update the ID after a rename.
+2. **Update `patches.json`** — this is the only permitted manual edit, scoped strictly to the rename:
+   - Change this patch's `id` to match the renamed folder name
+   - Update any `dependsOn` entries in *other* patches that reference the old `id`
+   - Do not add, remove, reorder, or change any other fields — the CLI owns everything else
 
 ---
 

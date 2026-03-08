@@ -57,9 +57,13 @@ If no issue number is provided, ask the user for one before proceeding.
    gh issue edit $ARGUMENTS --add-label in-progress
    ```
 
-4. **Link the branch to the issue:**
+4. **Link the branch to the issue** (requires `gh` CLI v2.28+):
    ```bash
    gh issue develop $ARGUMENTS --branch feature/<descriptive-branch-name>
+   ```
+   If this command is unavailable (older `gh`), post a comment instead:
+   ```bash
+   gh issue comment $ARGUMENTS --body "Working on this in branch \`feature/<descriptive-branch-name>\`."
    ```
 
 ---

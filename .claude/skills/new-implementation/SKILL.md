@@ -137,9 +137,9 @@ Add `init-scripts/01-init.sql` if initial setup SQL is needed (e.g., character s
 
 ---
 
-## Phase 5: patches.local.json
+## Phase 5: Connection string template
 
-Create a **template** that the developer fills in locally (this file is gitignored):
+Create and **commit** `dbpatch.local.example.json` as a template developers can copy:
 
 ```json
 {
@@ -147,7 +147,17 @@ Create a **template** that the developer fills in locally (this file is gitignor
 }
 ```
 
-Add `patches.local.json` to the implementation's `.gitignore` if not already present.
+Add `patches.local.json` (the filled-in local copy, not the example) to `.gitignore`:
+
+```
+patches.local.json
+```
+
+Developers copy the example and fill in their own credentials:
+```bash
+cp dbpatch.local.example.json patches.local.json
+# then edit patches.local.json with real values
+```
 
 ---
 
@@ -210,7 +220,7 @@ Implementation of <Scenario> using DBPatch v2 with the ODBC plugin targeting MyS
 ## How to run
 
 1. `docker compose up -d`
-2. Copy `patches.local.json.example` to `patches.local.json` and set your connection string
+2. Copy `dbpatch.local.example.json` to `patches.local.json` and set your connection string
 3. `dbpatch build`
 
 ## Layers implemented

@@ -39,11 +39,22 @@ Determine the PR number:
 
 ## Phase 1: Gather Comments
 
+Store the repo name and PR number in shell variables first so every subsequent command uses them consistently:
+
 ```bash
 REPO="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
-gh api "repos/$REPO/pulls/<PR_NUMBER>/comments" --jq '.[] | {id, path, line, body, user: .user.login}'
-gh api "repos/$REPO/pulls/<PR_NUMBER>/reviews" --jq '.[] | {user: .user.login, state, body}'
+PR_NUMBER=<PR_NUMBER>
+
+# Fetch all inline review comments (includes the comment id needed for replies)
+gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/comments" \
+  --jq '.[] | {id, path, line, body, user: .user.login}'
+
+# Fetch top-level review summaries
+gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/reviews" \
+  --jq '.[] | {id, user: .user.login, state, body}'
 ```
+
+Record each comment's `id` alongside the file, line, and body. You will need these IDs in Phase 8 to post replies to the correct threads.
 
 ---
 
@@ -127,6 +138,31 @@ git commit -m "fix: address PR review feedback (#<PR_NUMBER>)"
 **Do NOT push** unless the user explicitly asks.
 **Do NOT merge the PR** — PR merging is always a manual action by the developer.
 **Do NOT add Co-Authored-By or Claude attribution.**
+
+---
+
+## Phase 8: Reply to Review Threads (if user asks to push or explicitly requests replies)
+
+After the commit is pushed, post a reply on each review comment thread using the comment `id` recorded in Phase 1. Use the exact `id` for each comment — do not guess or match by file/line alone.
+
+```bash
+REPO="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
+COMMIT="$(git rev-parse --short HEAD)"
+
+# For a comment that was fixed:
+gh api "repos/$REPO/pulls/comments/<COMMENT_ID>/replies" \
+  -f body="Fixed in $COMMIT: <one-sentence explanation of what changed>"
+
+# For a comment that was intentionally not fixed:
+gh api "repos/$REPO/pulls/comments/<COMMENT_ID>/replies" \
+  -f body="Won't fix: <explanation of why this was declined or is out of scope>"
+```
+
+**Critical rules for replies:**
+- Match each reply to the specific `id` from Phase 1 — never approximate by file or line number
+- Every addressed comment gets a reply; every skipped comment gets a "Won't fix" reply
+- Do NOT resolve threads — leave that for the developer to do after reviewing the replies
+- Do NOT reply to top-level review summaries (the `reviews` endpoint) — only to inline comments
 
 ---
 
