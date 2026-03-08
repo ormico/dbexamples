@@ -1,0 +1,5 @@
+ProjectId,Name,Description,StartDate,EndDate,Budget
+1,Employee Portal v2,Rebuild the employee self-service portal with modern UI and improved performance,2023-06-01,2023-12-31,150000.00
+2,Infrastructure Modernization,Migrate legacy servers to containerized infrastructure with automated deployment,2023-03-01,2023-09-30,200000.00
+3,Data Analytics Platform,Build internal analytics dashboard for HR and management reporting,2024-01-15,,75000.00
+4,Mobile App MVP,Develop mobile application for employee time tracking and leave requests,2023-09-01,2024-03-31,120000.00

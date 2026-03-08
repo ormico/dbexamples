@@ -1,0 +1,10 @@
+AssignmentId,EmployeeId,ProjectId,AssignedDate,Role
+1,2,1,2023-06-01,Lead Developer
+2,3,1,2023-06-01,Full-Stack Developer
+3,5,1,2023-07-01,Frontend Developer
+4,4,2,2023-03-01,Infrastructure Lead
+5,10,2,2023-03-01,DevOps Engineer
+6,6,3,2024-01-15,Backend Developer
+7,9,3,2024-01-15,Data Engineer
+8,2,4,2023-09-01,Technical Advisor
+9,12,4,2023-09-01,QA Lead
