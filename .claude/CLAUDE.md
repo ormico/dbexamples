@@ -27,9 +27,18 @@ Both documents are shared across all implementations. Never modify them for plat
 
 ## Critical Rules
 
+### Git Workflow
+- **NEVER merge pull requests** — merging PRs is always a manual action by the developer
+- Never push to remote without explicit user instruction
+
 ### patches.json
 - **NEVER** edit `patches.json` manually — the dbpatch CLI owns this file
 - Use `dbpatch addpatch -n <name>` to create patches; it generates the ID and updates dependencies
+- **Narrow exception — rename only:** After renaming a patch folder to match `SCENARIO.md`
+  timestamps, you may manually update:
+  - The renamed patch's `id` field to match the new folder name
+  - Any `dependsOn` entries in *other* patches that reference the old `id`
+  - Nothing else — do not add, remove, or reorder patches by hand
 
 ### ScriptOverrides
 - **ODBC MySQL**: Copy `ScriptOverrides/` from an existing ODBC MySQL implementation
