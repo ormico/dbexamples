@@ -1,0 +1,11 @@
+LeaveId,EmployeeId,StartDate,EndDate,LeaveType,LeaveBalance
+1,1,2023-07-10,2023-07-14,Vacation,10
+2,2,2023-11-22,2023-11-24,Vacation,8
+3,3,2023-05-08,2023-05-08,Sick Leave,14
+4,4,2024-01-02,2024-01-05,Vacation,12
+5,5,2023-09-18,2023-09-18,Personal Day,5
+6,6,2023-12-26,2023-12-29,Vacation,9
+7,7,2023-06-19,2023-06-23,Vacation,10
+8,8,2024-01-15,2024-01-15,Sick Leave,14
+9,9,2024-02-14,2024-02-14,Personal Day,4
+10,11,2023-08-21,2023-08-25,Vacation,11

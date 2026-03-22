@@ -1,0 +1,9 @@
+ReviewId,EmployeeId,ReviewDate,PerformanceRating,Comments,PerformanceGoals
+1,1,2023-03-01,5,Excellent leadership in establishing core database architecture. Consistently delivers high-quality work.,Lead architecture design for Layers 4-7 implementation
+2,2,2023-06-15,4,Strong technical contributions and code quality. Good collaboration with team.,Mentor junior engineers on database design patterns
+3,3,2023-01-20,4,Excellent integration work and end-to-end thinking. Proactive about edge cases.,Lead salary tracking module expansion
+4,4,2023-09-01,5,Exceptional infrastructure reliability. Zero downtime deployments.,Implement automated database backup and recovery procedures
+5,5,2024-01-15,3,Good progress for first year. Needs to improve code review responsiveness.,Complete advanced SQL training and contribute to 2 major features
+6,7,2023-05-15,5,Outstanding product strategy. Roadmap well-received by stakeholders.,Define requirements for Phase 2 product features
+7,8,2023-03-10,4,Thorough testing coverage. Caught 3 critical bugs before production.,Expand automated test suite coverage to 80 percent
+8,11,2023-11-20,4,Reliable and consistent contributor. Strong senior mentorship.,Lead onboarding for next two junior engineers

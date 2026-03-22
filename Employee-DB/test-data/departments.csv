@@ -1,0 +1,5 @@
+DepartmentId,Name,Description,DepartmentHeadId
+1,Engineering,Software development and system architecture,
+2,Product,Product management and strategic direction,
+3,Quality Assurance,Software testing and quality control processes,
+4,DevOps,Infrastructure deployment and operational support,
