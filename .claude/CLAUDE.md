@@ -64,6 +64,8 @@ Skills in `.claude/skills/` are auto-discovered by Claude Code.
 | `dbpatch-v2-implement-layer` | Implementing a layer from `SCHEMA_DESIGN.md` into a DBPatch v2 project |
 | `create-example` | Starting a new scenario (Phases 1–3: concept → schema → narrative) |
 | `new-implementation` | Scaffolding a new tool+platform implementation of an existing scenario |
+| `generate-test-data` | Generating or updating root test data CSVs + data-manifest.json for a scenario |
+| `generate-layer-data` | Deriving per-layer test data from root CSVs for incremental layer implementation |
 
 ---
 
