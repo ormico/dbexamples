@@ -157,7 +157,7 @@ For example, Layer 2 must depend on all three Layer 1 patches:
 }
 ```
 
-### Step 7: Build and validate
+### Step 7: Build
 
 ```bash
 # Bring up the database container
@@ -165,18 +165,32 @@ docker compose up -d
 
 # Apply patches
 dbpatch build
-
-# Confirm the patch is in InstalledPatches
-# (run a validation query against the target database)
 ```
-
-Run validation queries to confirm the tables, columns, and constraints are correct. Check that foreign keys work by inserting test rows.
 
 If `dbpatch build` fails:
 
 - Read the error message — it usually identifies the failing SQL file.
 - Fix the SQL file and re-run `dbpatch build`.
 - Do not retry the same failing build without a change.
+
+### Step 7b: Load layer data
+
+After a successful build, load layer data **before** validation. This ensures validation runs against real data, and migration SQL (in subsequent layers) has rows to transform.
+
+1. Check if layer data exists at `<scenario-root>/test-data/layers/<layer-name>/`. If not, generate it using the `generate-layer-data` skill.
+2. Load using the implementation's loader script or manually via `layer-manifest.json` load order.
+3. Spot-check row counts to confirm data loaded correctly.
+
+See "Root Data vs Layer Data" below for how layer data is derived from root CSVs.
+
+### Step 7c: Validate with data
+
+Run validation queries **after data is loaded**:
+
+- Confirm tables, columns, and constraints are correct
+- Confirm foreign keys resolve by joining related tables
+- Confirm row counts match the layer CSVs
+- For migration layers: verify data was transformed correctly (old columns dropped, new FK values valid)
 
 ### Step 8: Add CRUD stored procedures
 
@@ -457,6 +471,60 @@ Document this in `data-manifest.json` or `load-test-data.ps1` comments.
 | Seed / reference | Lookup table values (LeaveType, ProjectStatus, etc.) | SQL INSERT files inside patches | Yes |
 | Demo | 5-20 rows per table | `test-data/*.csv` | Yes (keep < 500 KB per scenario) |
 | Volume | Realistic large dataset | Generated locally by script | No |
+
+---
+
+## Root Data vs Layer Data
+
+Root test data and layer data serve different purposes in the implementation workflow. Understanding the distinction is essential for correct incremental layer implementation.
+
+### Root data (end-state)
+
+Root data (`test-data/*.csv` + `data-manifest.json`) represents the database after **all layers** have been applied. Every table and every final-state column is present, even if those columns are introduced in later layers.
+
+Root data is the **single source of truth**. It is never loaded directly into the database during incremental implementation — it exists so that layer data can be derived from it.
+
+Generated or updated using the `generate-test-data` skill.
+
+### Layer data (projected per-layer)
+
+Layer data (`test-data/layers/<layer-name>/`) is a **mechanical derivation** of root data, projected to the schema state at a specific point in the layer sequence. Each layer directory contains:
+
+- CSVs with only the tables and columns that exist at that layer's cumulative schema state
+- A `layer-manifest.json` with load order, deferred updates, and derivation metadata
+
+Layer data is never hand-authored. Generated using the `generate-layer-data` skill.
+
+### How derivation works
+
+For each layer, the `generate-layer-data` skill:
+
+1. Computes the cumulative schema state (all layers up to and including the target)
+2. For each table that exists at that state, projects root CSV columns down to only those present
+3. **Reverse-maps replaced columns** for pre-migration layers. Example: if Layer 4 replaces `LeaveType` (text) with `LeaveTypeId` (FK), then layers before Layer 4 need the text column. The skill reads the root `LeaveTypeId` value, looks up the corresponding name in the reference table CSV, and writes `LeaveType=Vacation` in the layer data.
+4. Omits tables and columns that don't exist yet at the target layer
+
+### Why this matters for migrations
+
+Migration SQL (e.g., `UPDATE EmployeeLeave SET LeaveTypeId = (SELECT LeaveTypeId FROM LeaveType WHERE Name = LeaveType)`) runs against **existing data in the database**. If tables are empty when the migration runs, the SQL succeeds but validates nothing.
+
+The incremental workflow ensures:
+- Data is loaded at each layer's schema state **before** the next layer's patch is applied
+- Migration SQL transforms real rows, not empty tables
+- Validation queries confirm actual data integrity, not just schema correctness
+
+### Per-layer workflow with data
+
+```
+For each layer:
+  1. dbpatch addpatch → rename → write SQL
+  2. dbpatch build (applies the patch)
+  3. Generate layer data (if not already present)
+  4. Load layer data into the database
+  5. Validate with real data (FK joins, row counts, spot-checks)
+  6. Add CRUD stored procedures
+  7. Commit
+```
 
 ---
 

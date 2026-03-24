@@ -143,7 +143,7 @@ Add numbered `.sql` files to the new patch folder. Files execute alphabetically 
 
 ---
 
-## Phase 5: Build and Validate
+## Phase 5a: Build
 
 ```bash
 # Start the database container (leave it running after — do not run docker compose down)
@@ -158,26 +158,85 @@ If `dbpatch build` fails:
 - Fix the SQL and re-run `dbpatch build`
 - Do not retry the same build without a change
 
-**Validation queries** — after a successful build, run queries to confirm the layer is correct:
+After a successful build, confirm the patch was recorded:
 
 ```bash
-# Confirm tables were created (MySQL example)
-docker exec <container-name> mysql -u root -p<password> <database> -e "SHOW TABLES;"
+docker exec <container-name> mysql -u root -p<password> <database> -e "SELECT * FROM InstalledPatches;"
+```
 
-# Confirm columns and types
+Leave the container running. Never run `docker compose down` during implementation.
+
+---
+
+## Phase 5b: Load Layer Data
+
+Layer data must be loaded **before** validation so that queries run against real data — not empty tables. This is critical for migration layers where SQL transforms existing rows.
+
+### If layer data already exists
+
+Check for `<scenario-root>/test-data/layers/<layer-name>/`. If the directory exists with CSVs and a `layer-manifest.json`, use it directly.
+
+### If layer data does not exist
+
+Generate it using the `generate-layer-data` skill:
+
+```
+/generate-layer-data <layer-name> <scenario-path>
+```
+
+This derives layer-projected CSVs from the root test data. It handles:
+- Including only tables and columns that exist at this layer's schema state
+- Reverse-mapping replaced columns (e.g., `LeaveTypeId` FK → `LeaveType` text for pre-migration layers)
+- Computing the correct load order and deferred updates
+
+### Load the data
+
+Use the implementation's loader script:
+
+```bash
+# Load layer data (not root data — layer data is projected to this schema state)
+pwsh load-test-data.ps1 -DataPath ../../test-data/layers/<layer-name>
+```
+
+If the loader doesn't support a `-DataPath` parameter yet, load CSVs manually using the `layer-manifest.json` load order and deferred updates.
+
+After loading, spot-check row counts:
+
+```bash
+docker exec <container-name> mysql -u root -p<password> <database> \
+  -e "SELECT 'Employee' AS tbl, COUNT(*) AS cnt FROM Employee UNION ALL SELECT 'Department', COUNT(*) FROM Department;"
+```
+
+---
+
+## Phase 5c: Validate with Data
+
+Run validation queries **after data is loaded** so you're checking real state, not empty tables.
+
+```bash
+# Confirm tables and columns
+docker exec <container-name> mysql -u root -p<password> <database> -e "SHOW TABLES;"
 docker exec <container-name> mysql -u root -p<password> <database> -e "DESCRIBE <table>;"
 
 # Confirm foreign keys
 docker exec <container-name> mysql -u root -p<password> <database> \
   -e "SELECT * FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA='<database>' AND REFERENCED_TABLE_NAME IS NOT NULL;"
 
-# Confirm patch was recorded
-docker exec <container-name> mysql -u root -p<password> <database> -e "SELECT * FROM InstalledPatches;"
+# Confirm data integrity — FK relationships resolve
+docker exec <container-name> mysql -u root -p<password> <database> \
+  -e "SELECT e.EmployeeId, e.FirstName, d.Name AS Department FROM Employee e JOIN Department d ON e.DepartmentId = d.DepartmentId LIMIT 5;"
+
+# Confirm row counts match layer CSVs
+docker exec <container-name> mysql -u root -p<password> <database> \
+  -e "SELECT 'Employee' AS tbl, COUNT(*) AS cnt FROM Employee UNION ALL SELECT 'Department', COUNT(*) FROM Department;"
 ```
 
-Surface any errors or unexpected results to the user before continuing.
+For **migration layers** (e.g., Layer 4 replacing text columns with FK references), also verify:
+- Old text columns no longer exist (if dropped)
+- New FK columns have valid references
+- Data was transformed correctly (spot-check a few rows)
 
-Leave the container running. Never run `docker compose down` during implementation.
+Surface any errors or unexpected results to the user before continuing.
 
 ---
 
@@ -208,7 +267,8 @@ Change the layer's status from `📋` to `✅` in the layer summary table.
 
 Report to the user:
 - Layer implemented: name, patch ID, files created
-- Validation results (tables, row counts if seed data was inserted)
+- Layer data: source (pre-existing or newly generated), tables loaded, row counts
+- Validation results (tables, FK integrity, data spot-checks)
 - Any deviations from the spec and why
 - Next layer to implement (from the dependency graph in SCHEMA_DESIGN.md)
 
